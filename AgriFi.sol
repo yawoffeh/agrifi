@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 /**
  * @title AgriFi - Green Yield Finance
@@ -15,7 +16,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
  * - Contract deployer becomes owner (Ownable(initialOwner) required by OZ v5+).
  * - Payments are accepted as ETH (msg.value) for simplicity; consider ERC20 stablecoin integration later.
  */
-contract AgriFi is ERC1155URIStorage, Ownable, ReentrancyGuard {
+contract AgriFi is ERC1155URIStorage, Ownable, ReentrancyGuard, IERC1155Receiver {
     using Counters for Counters.Counter;
 
     Counters.Counter private _cropIdCounter;
@@ -86,6 +87,31 @@ contract AgriFi is ERC1155URIStorage, Ownable, ReentrancyGuard {
     event HarvestCompleted(uint256 indexed cropId, uint256 actualYield);
     event RewardsDistributed(uint256 indexed cropId, uint256 totalRewards);
     event PlatformFeeUpdated(uint256 newFeePct);
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, IERC165) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
 
     /**
      * @dev Constructor
@@ -345,12 +371,5 @@ contract AgriFi is ERC1155URIStorage, Ownable, ReentrancyGuard {
         require(newPct <= 100, "Invalid fee");
         platformFeePct = newPct;
         emit PlatformFeeUpdated(newPct);
-    }
-
-    /**
-     * @dev Override supportsInterface (ERC1155 + others)
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155) returns (bool) {
-        return super.supportsInterface(interfaceId);
     }
 }

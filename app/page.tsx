@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,15 +8,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Wallet, Leaf, TrendingUp, Users, MapPin, Calendar, Coins } from "lucide-react"
+import { useWalletContext } from "../components/contexts/walletContext"
+import { getActiveCrops } from "@/components/contract/general";
 
 export default function AgriFiPlatform() {
   const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [activeTab, setActiveTab] = useState("marketplace")
+  const {walletAddress, connect} = useWalletContext();
 
   const connectWallet = () => {
-    // Simulate wallet connection
-    setIsWalletConnected(true)
+    connect();
   }
+
+  useEffect(() => {
+    if (walletAddress) {
+      setIsWalletConnected(true);
+    }
+    else {
+      setIsWalletConnected(false);
+      connectWallet();
+    }
+  }, [walletAddress]);
 
   const cropTokens = [
     {
@@ -104,7 +116,7 @@ export default function AgriFiPlatform() {
             ) : (
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-primary border-primary">
-                  0x1234...5678
+                  {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
                 </Badge>
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>W</AvatarFallback>

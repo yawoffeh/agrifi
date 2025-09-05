@@ -1,13 +1,11 @@
-import { contract } from "./config";
-
 // Register a farmer
-export async function registerFarmer(ensName, name, location) {
+export async function registerFarmer(contract, ensName, name, location) {
   const tx = await contract.registerFarmer(ensName, name, location);
   return tx.wait();
 }
 
 // Tokenize a crop (mint new ERC1155 with metadata URI on IPFS)
-export async function tokenizeCrop(cropType, variety, totalSupply, pricePerToken, harvestDate, carbonCredits, metadataURI) {
+export async function tokenizeCrop(contract, cropType, variety, totalSupply, pricePerToken, harvestDate, carbonCredits, metadataURI) {
   const tx = await contract.tokenizeCrop(
     cropType,
     variety,
@@ -23,12 +21,12 @@ export async function tokenizeCrop(cropType, variety, totalSupply, pricePerToken
 }
 
 // Complete harvest
-export async function completeHarvest(cropId, actualYield) {
+export async function completeHarvest(contract, cropId, actualYield) {
   const tx = await contract.completeHarvest(cropId, actualYield);
   return tx.wait();
 }
 
 // Get farmer details
-export async function getFarmer(address) {
+export async function getFarmer(contract, address) {
   return contract.getFarmer(address);
 }

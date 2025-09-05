@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import abi from "./abi.json";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
+const provider = new ethers.BrowserProvider(window.ethereum);
 const signer = provider.getSigner();
 
 const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
