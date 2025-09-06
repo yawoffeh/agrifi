@@ -12,8 +12,7 @@ import { useWalletContext } from "@/components/contexts/walletContext"
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/marketplace", label: "Marketplace" },
-  { href: "/investments", label: "My Investments" },
-  { href: "/farmers", label: "Farmers" },
+  { href: "/investments", label: "My Investments" }
 ]
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {

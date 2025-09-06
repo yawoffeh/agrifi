@@ -11,6 +11,7 @@ import { Wallet, Leaf, TrendingUp, Users, MapPin, Calendar, Coins } from "lucide
 import { useWalletContext } from "@/components/contexts/walletContext"
 import { ethers } from "ethers"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function AgriFiPlatform() {
   const [isWalletConnected, setIsWalletConnected] = useState(false)
@@ -18,10 +19,35 @@ export default function AgriFiPlatform() {
   const router = useRouter()
 
   // NOTE: using controllers from the WalletContext exactly as you requested
-  const { walletAddress, connect, getActiveCrops, getCropToken } = useWalletContext()
+  const { walletAddress, connect, getActiveCrops, getCropToken, getInvestorHistory } = useWalletContext()
 
   const [cropTokens, setCropTokens] = useState<any[]>([])
   const [loadingCrops, setLoadingCrops] = useState(false)
+  const [myInvestments, setMyInvestments] = useState<any[]>([])
+
+  useEffect(() => {
+    if (walletAddress) fetchMyInvestments()
+  }, [walletAddress])
+
+  async function fetchMyInvestments() {
+    const history = await getInvestorHistory(walletAddress)
+    const items: any[] = []
+
+    for (const inv of history) {
+      const cropId = Number(inv.cropId ?? inv[0])
+      const amount = Number(inv.amount ?? inv[1])
+      const crop = await getCropToken(cropId)
+
+      items.push({
+        cropId,
+        cropType: crop?.cropType ?? "Unknown",
+        variety: crop?.variety ?? "",
+        tokensOwned: amount,
+      })
+    }
+    setMyInvestments(items)
+  }
+
 
   useEffect(() => {
     if (walletAddress) {
@@ -101,6 +127,7 @@ export default function AgriFiPlatform() {
         }
       }
 
+
       setCropTokens(crops)
     } catch (err) {
       console.error("Failed to fetch active crops:", err)
@@ -133,17 +160,6 @@ export default function AgriFiPlatform() {
     }
   }
 
-  const myInvestments = [
-    {
-      farmName: "Aburi Organic Farms",
-      cropType: "Organic Maize",
-      tokensOwned: 50,
-      investmentValue: 125,
-      currentValue: 142,
-      roi: "+13.6%",
-    },
-  ]
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -164,13 +180,23 @@ export default function AgriFiPlatform() {
                 Connect Wallet
               </Button>
             ) : (
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-primary border-primary">
-                  {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
-                </Badge>
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>W</AvatarFallback>
-                </Avatar>
+              <div className="flex items-center gap-4">
+                {!isWalletConnected ? (
+                  <Button onClick={connect} className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4" />
+                    Connect Wallet
+                  </Button>
+                ) : (
+                  // Clicking the badge/avatar will navigate to the profile page
+                  <Link href="/profile" className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-primary border-primary">
+                      {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
+                    </Badge>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>{walletAddress ? walletAddress.slice(2, 3) : "U"}</AvatarFallback>
+                    </Avatar>
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -205,12 +231,11 @@ export default function AgriFiPlatform() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
             <TabsTrigger value="dashboard" disabled={!isWalletConnected}>
               My Investments
             </TabsTrigger>
-            <TabsTrigger value="farmers">Farmers</TabsTrigger>
           </TabsList>
 
           {/* Marketplace Tab */}
@@ -275,6 +300,64 @@ export default function AgriFiPlatform() {
                           onClick={() => router.push(`/invest/${token.id}`)}
                         >
                           Invest Now
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          {/* My Investments Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-semibold text-foreground">My Investments</h3>
+              <Badge variant="secondary">{myInvestments.length} Investments</Badge>
+            </div>
+            
+            {!isWalletConnected ? (
+              <p className="text-muted-foreground">Connect your wallet to view investments.</p>
+            ) : myInvestments.length === 0 ? (
+              <p className="text-muted-foreground">No investments yet.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {myInvestments.map((inv, i) => (
+                  <Card key={i} className="hover:shadow-md transition-shadow border-border">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          {/* <AvatarFallback>{inv.farmName[0]}</AvatarFallback> */}
+                        </Avatar>
+                        <div>
+                          <CardTitle className="text-lg">{inv.farmName}</CardTitle>
+                          <CardDescription className="text-primary font-mono text-sm">{inv.cropType}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>Tokens Owned</span>
+                          <span className="font-medium text-foreground">{inv.tokensOwned}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Investment Value</span>
+                          <span className="font-medium text-foreground">${inv.investmentValue}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Current Value</span>
+                          <span className="font-medium text-foreground">${inv.currentValue}</span>
+                        </div>
+                        {/* <div className="flex justify-between">
+                          <span>ROI</span>
+                          <span className={`font-medium ${inv.roi.startsWith('+') ? 'text-green-500' : inv.roi.startsWith('-') ? 'text-red-500' : ''}`}>{inv.roi}</span>
+                        </div> */}
+                      </div>
+                      <Button
+                        className="w-full hover:scale-[1.02] transition-transform hover:cursor-pointer"
+                        onClick={() => router.push(`/investments/${inv.cropId}`)}
+                      >
+                        View Details
                       </Button>
                     </CardContent>
                   </Card>
