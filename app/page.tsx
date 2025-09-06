@@ -10,10 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Wallet, Leaf, TrendingUp, Users, MapPin, Calendar, Coins } from "lucide-react"
 import { useWalletContext } from "@/components/contexts/walletContext"
 import { ethers } from "ethers"
+import { useRouter } from "next/navigation"
 
 export default function AgriFiPlatform() {
   const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [activeTab, setActiveTab] = useState("marketplace")
+  const router = useRouter()
 
   // NOTE: using controllers from the WalletContext exactly as you requested
   const { walletAddress, connect, getActiveCrops, getCropToken } = useWalletContext()
@@ -235,7 +237,7 @@ export default function AgriFiPlatform() {
                           </Avatar>
                           <div>
                             <CardTitle className="text-lg">{token.cropType || `Crop #${token.id}`}</CardTitle>
-                            <CardDescription className="text-primary font-mono text-sm">{token.ensName || token.farmer}</CardDescription>
+                            <CardDescription className="text-primary font-mono text-sm">{token.ensName || token.farmer.slice(0, 6)}...{token.farmer?.slice(-4)}</CardDescription>
                           </div>
                         </div>
                         <Badge variant="outline" className="text-xs">
@@ -267,8 +269,12 @@ export default function AgriFiPlatform() {
                         </div>
                       </div>
 
-                      <Button className="w-full" disabled={!isWalletConnected}>
-                        {isWalletConnected ? "Invest Now" : "Connect Wallet to Invest"}
+                      <Button
+                          className="w-full hover:scale-[1.02] transition-transform hover:cursor-pointer"
+                          disabled={!isWalletConnected}
+                          onClick={() => router.push(`/invest/${token.id}`)}
+                        >
+                          Invest Now
                       </Button>
                     </CardContent>
                   </Card>

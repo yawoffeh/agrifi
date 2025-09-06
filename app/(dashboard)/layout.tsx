@@ -12,7 +12,7 @@ import { useWalletContext } from "@/components/contexts/walletContext"
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/marketplace", label: "Marketplace" },
-  { href: "/dashboard", label: "My Investments" },
+  { href: "/investments", label: "My Investments" },
   { href: "/farmers", label: "Farmers" },
 ]
 

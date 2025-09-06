@@ -4,7 +4,8 @@ import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import { WalletProvider } from "../components/contexts/walletContext";
 import './globals.css'
-
+// Add toast provider
+import { Toaster } from 'react-hot-toast'
 export const metadata: Metadata = {
   title: 'Agrifi',
   description: 'Created with Agrifi',
@@ -19,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+        <Toaster />
         <WalletProvider>
           {children}
         </WalletProvider>

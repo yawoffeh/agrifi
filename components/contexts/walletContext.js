@@ -114,7 +114,7 @@ export const WalletProvider = ({ children }) => {
     try {
       const contract = await getContract();
       const totalCost = ethers.parseEther(
-        (Number(tokenAmount) * Number(pricePerToken)).toString()
+        (Number(tokenAmount) * Number(pricePerToken)).toFixed(18)
       );
       const tx = await contract.investInCrop(cropId, tokenAmount, {
         value: totalCost,
