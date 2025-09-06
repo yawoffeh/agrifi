@@ -113,16 +113,6 @@ export default function TokenizePage() {
 
     // --- 3. call contract ---
     const contract = await getContract()
-    const data = {
-      some: BigInt(form.totalSupply),
-      this: ethers.parseUnits(form.pricePerToken, 18),
-      tbhat: BigInt(harvestTimestamp),
-      fsdfs: BigInt(form.carbonCredits),
-      url: metadataUrl,
-      rule: "something"
-    }
-
-    console.log("Contract data:", data)
 
     toast.loading("Submitting to blockchain...")
     const tx = await contract.tokenizeCrop(
