@@ -12,6 +12,8 @@ import { useWalletContext } from "@/components/contexts/walletContext"
 import { ethers } from "ethers"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useEnsName, useEnsAvatar } from "wagmi"
+
 
 export default function AgriFiPlatform() {
   const [isWalletConnected, setIsWalletConnected] = useState(false)
@@ -24,6 +26,16 @@ export default function AgriFiPlatform() {
   const [cropTokens, setCropTokens] = useState<any[]>([])
   const [loadingCrops, setLoadingCrops] = useState(false)
   const [myInvestments, setMyInvestments] = useState<any[]>([])
+
+  const { data: ensName } = useEnsName({
+    address: walletAddress as `0x${string}`,
+    chainId: 1, // ENS lives on Ethereum mainnet
+  })
+
+  const { data: ensAvatar } = useEnsAvatar({
+    name: ensName ?? undefined,
+    chainId: 1,
+  })
 
   useEffect(() => {
     if (walletAddress) fetchMyInvestments()
@@ -187,16 +199,21 @@ export default function AgriFiPlatform() {
                     Connect Wallet
                   </Button>
                 ) : (
-                  // Clicking the badge/avatar will navigate to the profile page
-                  <Link href="/profile" className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-primary border-primary">
-                      {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
-                    </Badge>
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{walletAddress ? walletAddress.slice(2, 3) : "U"}</AvatarFallback>
-                    </Avatar>
-                  </Link>
-                )}
+              <Link href="/profile" className="flex items-center gap-2">
+                <Badge variant="outline" className="text-primary border-primary">
+                  {ensName || `${walletAddress?.slice(0, 6)}...${walletAddress?.slice(-4)}`}
+                </Badge>
+                <Avatar className="h-8 w-8">
+                  {ensAvatar ? (
+                    <AvatarImage src={ensAvatar} alt={ensName ?? walletAddress} />
+                  ) : (
+                    <AvatarFallback>
+                      {walletAddress ? walletAddress.slice(2, 3) : "U"}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+              </Link>
+            )}
               </div>
             )}
           </div>

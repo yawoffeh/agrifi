@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import { WalletProvider } from "../components/contexts/walletContext";
+import { Providers } from './providers';
 import './globals.css'
 // Add toast provider
 import { Toaster } from 'react-hot-toast'
@@ -20,11 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+        <Providers>
         <Toaster />
         <WalletProvider>
           {children}
         </WalletProvider>
         <Analytics />
+        </Providers>
       </body>
     </html>
   )

@@ -6,8 +6,11 @@ import { usePathname } from "next/navigation"
 import { Leaf, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useWalletContext } from "@/components/contexts/walletContext"
+
+// wagmi hooks
+import { useEnsName, useEnsAvatar } from "wagmi"
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -20,12 +23,19 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   const { walletAddress, connect } = useWalletContext()
   const pathname = usePathname()
 
+  // ENS lookups
+  const { data: ensName } = useEnsName({
+    address: walletAddress as `0x${string}`,
+    chainId: 1, // ENS lives on Ethereum mainnet
+  })
+
+  const { data: ensAvatar } = useEnsAvatar({
+    name: ensName ?? undefined,
+    chainId: 1,
+  })
+
   useEffect(() => {
-    if (walletAddress) {
-      setIsWalletConnected(true)
-    } else {
-      setIsWalletConnected(false)
-    }
+    setIsWalletConnected(!!walletAddress)
   }, [walletAddress])
 
   return (
@@ -69,13 +79,18 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
                 Connect Wallet
               </Button>
             ) : (
-              // Clicking the badge/avatar will navigate to the profile page
               <Link href="/profile" className="flex items-center gap-2">
                 <Badge variant="outline" className="text-primary border-primary">
-                  {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
+                  {ensName || `${walletAddress?.slice(0, 6)}...${walletAddress?.slice(-4)}`}
                 </Badge>
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback>{walletAddress ? walletAddress.slice(2, 3) : "U"}</AvatarFallback>
+                  {ensAvatar ? (
+                    <AvatarImage src={ensAvatar} alt={ensName ?? walletAddress} />
+                  ) : (
+                    <AvatarFallback>
+                      {walletAddress ? walletAddress.slice(2, 3) : "U"}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
               </Link>
             )}

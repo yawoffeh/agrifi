@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useWalletContext } from "@/components/contexts/walletContext"
+import { useEnsName, useEnsAvatar, useEnsAddress } from "wagmi"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -22,6 +23,16 @@ export default function ProfilePage() {
   const [name, setName] = useState("")
   const [location, setLocation] = useState("")
   const [registering, setRegistering] = useState(false)
+  const [ensValid, setEnsValid] = useState(true)
+
+  // 🔹 ENS lookups
+  const { data: resolvedEnsName } = useEnsName({ address: walletAddress as `0x${string}`, chainId: 1 })
+  const { data: ensAvatar } = useEnsAvatar({ name: resolvedEnsName ?? undefined, chainId: 1 })
+
+  // when ENS resolves, set as default value in the form
+  useEffect(() => {
+    if (resolvedEnsName) setEnsName(resolvedEnsName)
+  }, [resolvedEnsName])
 
   useEffect(() => {
     if (!walletAddress) {
@@ -36,37 +47,29 @@ export default function ProfilePage() {
     setLoading(true)
     try {
       const raw = await getFarmer(walletAddress)
-      console.log("Raw farmer data", raw)
       if (!raw) {
         setFarmer(null)
         setCropViews([])
         return
       }
-      const ensName = raw?.ensName ?? raw?.[0] ?? ""
-      const name = raw?.name ?? raw?.[1] ?? ""
-      const loc = raw?.location ?? raw?.[2] ?? ""
-      const reputation = raw?.reputationScore ?? raw?.[3] ?? 0
-      const isRegistered = raw?.isRegistered ?? raw?.[4] ?? false
-      const cropIdsRaw = raw?.cropIds ?? raw?.[5] ?? []
-      const cropIds = Array.isArray(cropIdsRaw) ? cropIdsRaw.map((x: any) => Number(x)) : []
-
       const farmerObj = {
-        ensName,
-        name,
-        location: loc,
-        reputation: Number(reputation),
-        isRegistered,
-        cropIds,
+        ensName: raw?.ensName ?? raw?.[0] ?? "",
+        name: raw?.name ?? raw?.[1] ?? "",
+        location: raw?.location ?? raw?.[2] ?? "",
+        reputation: Number(raw?.reputationScore ?? raw?.[3] ?? 0),
+        isRegistered: raw?.isRegistered ?? raw?.[4] ?? false,
+        cropIds: Array.isArray(raw?.[5]) ? raw[5].map((x: any) => Number(x)) : [],
       }
 
       setFarmer(farmerObj)
 
-      if (cropIds.length > 0) {
+      // fetch tokenized crops
+      if (farmerObj.cropIds.length > 0) {
         const cviews: any[] = []
-        for (const id of cropIds) {
+        for (const id of farmerObj.cropIds) {
           try {
             const cv = await getCropToken(id)
-            const normalized = {
+            cviews.push({
               id,
               farmer: cv?.farmer ?? cv?.[0],
               cropType: cv?.cropType ?? cv?.[1],
@@ -78,8 +81,7 @@ export default function ProfilePage() {
               isActive: cv?.isActive ?? cv?.[7] ?? false,
               totalInvested: Number(cv?.totalInvested ?? cv?.[8] ?? 0),
               metadataURI: cv?.metadataURI ?? cv?.[9] ?? "",
-            }
-            cviews.push(normalized)
+            })
           } catch (err) {
             console.error("Failed fetching crop token", id, err)
           }
@@ -93,10 +95,28 @@ export default function ProfilePage() {
     }
   }
 
+  async function validateEnsOwnership(name: string) {
+    try {
+      if (!name.endsWith(".eth")) {
+        setEnsValid(false)
+        return
+      }
+      const { data: ownerAddr } = await useEnsAddress({ name })
+      setEnsValid(ownerAddr?.toLowerCase() === walletAddress?.toLowerCase())
+    } catch (err) {
+      console.error("ENS validation error:", err)
+      setEnsValid(false)
+    }
+  }
+
   async function handleRegister(e: any) {
     e.preventDefault()
     setRegistering(true)
     try {
+      if (ensName && !ensValid) {
+        alert("ENS name does not resolve to your wallet.")
+        return
+      }
       const tx = await registerFarmer(ensName, name, location)
       await fetchFarmer()
     } catch (err) {
@@ -128,17 +148,15 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="flex items-center gap-4 mb-6">
           <Avatar className="h-16 w-16">
-            <AvatarImage src="/placeholder.svg" />
+            <AvatarImage src={ensAvatar ?? "/placeholder.svg"} />
             <AvatarFallback>{walletAddress ? walletAddress.slice(2, 3) : "U"}</AvatarFallback>
           </Avatar>
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              {farmer?.name || shortenAddress(walletAddress)}
+              {resolvedEnsName || farmer?.name || shortenAddress(walletAddress)}
             </h1>
             <p className="text-primary font-mono">
-              {farmer?.ensName && farmer.ensName !== ""
-                ? farmer.ensName
-                : shortenAddress(walletAddress)}
+              {resolvedEnsName ?? shortenAddress(walletAddress)}
             </p>
             <div className="mt-2 flex items-center gap-2">
               <Badge variant="outline">
@@ -154,7 +172,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Not registered -> show register form */}
+        {/* Register Farmer Form */}
         {!farmer?.isRegistered ? (
           <Card className="border-border">
             <CardHeader>
@@ -169,9 +187,17 @@ export default function ProfilePage() {
                   <input
                     placeholder="ENS (optional, e.g. aburi-farms.eth)"
                     value={ensName}
-                    onChange={(e) => setEnsName(e.target.value)}
-                    className="input"
+                    onChange={(e) => {
+                      setEnsName(e.target.value)
+                      validateEnsOwnership(e.target.value)
+                    }}
+                    className={`input ${ensValid ? "" : "border-red-500"}`}
                   />
+                  {!ensValid && (
+                    <span className="text-xs text-red-500">
+                      ENS name does not belong to this wallet.
+                    </span>
+                  )}
                   <span className="text-xs text-muted-foreground mt-1">
                     Don’t have ENS?{" "}
                     <a
