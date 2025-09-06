@@ -36,12 +36,13 @@ AgriFi is a blockchain-powered platform that enables farmers to tokenize their c
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/agrifi.git
+git clone https://github.com/yawoffeh/agrifi.git
 
 # Enter the project
 cd agrifi
 
 # Install dependencies
-npm install
-# or
-yarn install
+pnpm install
+
+# Run Program
+npm run dev
